@@ -84,13 +84,13 @@ variable "sns_email_endpoint" {
 }
 
 variable "domain_name" {
-  description = "Base domain students registered (e.g., chewbacca-growl.com)."
+  description = "Base domain students registered (e.g., alice.tetsuzai.com)."
   type        = string
-  default     = "chewbacca-growl.com"
+  default     = "alice.tetsuzai.com"
 }
 
 variable "app_subdomain" {
-  description = "App hostname prefix (e.g., app.chewbacca-growl.com)."
+  description = "App hostname prefix (e.g., app.alice.tetsuzai.com)."
   type        = string
   default     = "app"
 }

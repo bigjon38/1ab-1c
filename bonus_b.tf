@@ -4,7 +4,7 @@
 
 locals {
   # Explanation: This is the roar address — where the galaxy finds your app.
-  chewbacca_fqdn = "${var.app_subdomain}.${var.domain_name}"
+  armageddon_fqdn = "${var.app_subdomain}.${var.domain_name}"
 }
 
 ############################################
@@ -12,10 +12,10 @@ locals {
 ############################################
 
 # Explanation: The ALB SG is the blast shield — only allow what the Rebellion needs (80/443).
-resource "aws_security_group" "chewbacca_alb_sg01" {
+resource "aws_security_group" "armageddon_alb_sg01" {
   name        = "${var.project_name}-alb-sg01"
   description = "ALB security group"
-  vpc_id      = aws_vpc.chewbacca_vpc01.id
+  vpc_id      = aws_vpc.armageddon_vpc01.id
 
   # TODO: students add inbound 80/443 from 0.0.0.0/0
   # TODO: students set outbound to target group port (usually 80) to private targets
@@ -25,14 +25,14 @@ resource "aws_security_group" "chewbacca_alb_sg01" {
   }
 }
 
-# Explanation: Chewbacca only opens the hangar door — allow ALB -> EC2 on app port (e.g., 80).
-resource "aws_security_group_rule" "chewbacca_ec2_ingress_from_alb01" {
+# Explanation: armageddon only opens the hangar door — allow ALB -> EC2 on app port (e.g., 80).
+resource "aws_security_group_rule" "armageddon_ec2_ingress_from_alb01" {
   type                     = "ingress"
-  security_group_id        = aws_security_group.chewbacca_ec2_sg01.id
+  security_group_id        = aws_security_group.armageddon_ec2_sg01.id
   from_port                = 80
   to_port                  = 80
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.chewbacca_alb_sg01.id
+  source_security_group_id = aws_security_group.armageddon_alb_sg01.id
 
   # TODO: students ensure EC2 app listens on this port (or change to 8080, etc.)
 }
@@ -42,16 +42,16 @@ resource "aws_security_group_rule" "chewbacca_ec2_ingress_from_alb01" {
 ############################################
 
 # Explanation: The ALB is your public customs checkpoint — it speaks TLS and forwards to private targets.
-resource "aws_lb" "chewbacca_alb01" {
+resource "aws_lb" "armageddon_alb01" {
   name               = "${var.project_name}-alb01"
   load_balancer_type = "application"
   internal           = false
 
-  security_groups = [aws_security_group.chewbacca_alb_sg01.id]
-  subnets         = aws_subnet.chewbacca_public_subnets[*].id
+  security_groups = [aws_security_group.armageddon_alb_sg01.id]
+  subnets         = aws_subnet.armageddon_public_subnets[*].id
 
   access_logs {
-    bucket  = aws_s3_bucket.chewbacca_alb_logs_bucket01[0].bucket
+    bucket  = aws_s3_bucket.armageddon_alb_logs_bucket01[0].bucket
     prefix  = var.alb_access_logs_prefix
     enabled = var.enable_alb_access_logs
   } # TODO: students can enable access logs to S3 as a stretch goal
@@ -65,12 +65,12 @@ resource "aws_lb" "chewbacca_alb01" {
 # Target Group + Attachment
 ############################################
 
-# Explanation: Target groups are Chewbacca’s “who do I forward to?” list — private EC2 lives here.
-resource "aws_lb_target_group" "chewbacca_tg01" {
+# Explanation: Target groups are armageddon’s “who do I forward to?” list — private EC2 lives here.
+resource "aws_lb_target_group" "armageddon_tg01" {
   name     = "${var.project_name}-tg01"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = aws_vpc.chewbacca_vpc01.id
+  vpc_id   = aws_vpc.armageddon_vpc01.id
 
   # TODO: students set health check path to something real (e.g., /health)
   health_check {
@@ -90,22 +90,22 @@ resource "aws_lb_target_group" "chewbacca_tg01" {
   }
 }
 
-# Explanation: Chewbacca personally introduces the ALB to the private EC2 — “this is my friend, don’t shoot.”
-resource "aws_lb_target_group_attachment" "chewbacca_tg_attach01" {
-  target_group_arn = aws_lb_target_group.chewbacca_tg01.arn
-  target_id        = aws_instance.chewbacca_ec201_private_bonus.id
+# Explanation: armageddon personally introduces the ALB to the private EC2 — “this is my friend, don’t shoot.”
+resource "aws_lb_target_group_attachment" "armageddon_tg_attach01" {
+  target_group_arn = aws_lb_target_group.armageddon_tg01.arn
+  target_id        = aws_instance.armageddon_ec201_private_bonus.id
   port             = 80
 
   # TODO: students ensure EC2 security group allows inbound from ALB SG on this port (rule above)
 }
 
 ############################################
-# ACM Certificate (TLS) for app.chewbacca-growl.com
+# ACM Certificate (TLS) for app.armageddon-growl.com
 ############################################
 
-# Explanation: TLS is the diplomatic passport — browsers trust you, and Chewbacca stops growling at plaintext.
-resource "aws_acm_certificate" "chewbacca_acm_cert01" {
-  domain_name       = local.chewbacca_fqdn
+# Explanation: TLS is the diplomatic passport — browsers trust you, and armageddon stops growling at plaintext.
+resource "aws_acm_certificate" "armageddon_acm_cert01" {
+  domain_name       = local.armageddon_fqdn
   validation_method = var.certificate_validation_method
 
   # TODO: students can add subject_alternative_names like var.domain_name if desired
@@ -117,14 +117,14 @@ resource "aws_acm_certificate" "chewbacca_acm_cert01" {
 
 # Explanation: DNS validation records are the “prove you own the planet” ritual — Route53 makes this elegant.
 # TODO: students implement aws_route53_record(s) if they manage DNS in Route53.
-# resource "aws_route53_record" "chewbacca_acm_validation" { ... }
+# resource "aws_route53_record" "armageddon_acm_validation" { ... }
 
 # Explanation: Once validated, ACM becomes the “green checkmark” — until then, ALB HTTPS won’t work.
-resource "aws_acm_certificate_validation" "chewbacca_acm_validation01" {
-  certificate_arn = aws_acm_certificate.chewbacca_acm_cert01.arn
+resource "aws_acm_certificate_validation" "armageddon_acm_validation01" {
+  certificate_arn = aws_acm_certificate.armageddon_acm_cert01.arn
 
   # TODO: if using DNS validation, students must pass validation_record_fqdns
-  # validation_record_fqdns = [aws_route53_record.chewbacca_acm_validation.fqdn]
+  # validation_record_fqdns = [aws_route53_record.armageddon_acm_validation.fqdn]
 }
 
 ############################################
@@ -132,8 +132,8 @@ resource "aws_acm_certificate_validation" "chewbacca_acm_validation01" {
 ############################################
 
 # Explanation: HTTP listener is the decoy airlock — it redirects everyone to the secure entrance.
-resource "aws_lb_listener" "chewbacca_http_listener01" {
-  load_balancer_arn = aws_lb.chewbacca_alb01.arn
+resource "aws_lb_listener" "armageddon_http_listener01" {
+  load_balancer_arn = aws_lb.armageddon_alb01.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -148,19 +148,19 @@ resource "aws_lb_listener" "chewbacca_http_listener01" {
 }
 
 # Explanation: HTTPS listener is the real hangar bay — TLS terminates here, then traffic goes to private targets.
-resource "aws_lb_listener" "chewbacca_https_listener01" {
-  load_balancer_arn = aws_lb.chewbacca_alb01.arn
+resource "aws_lb_listener" "armageddon_https_listener01" {
+  load_balancer_arn = aws_lb.armageddon_alb01.arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate_validation.chewbacca_acm_validation01.certificate_arn
+  certificate_arn   = aws_acm_certificate_validation.armageddon_acm_validation01.certificate_arn
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.chewbacca_tg01.arn
+    target_group_arn = aws_lb_target_group.armageddon_tg01.arn
   }
 
-  depends_on = [aws_acm_certificate_validation.chewbacca_acm_validation01]
+  depends_on = [aws_acm_certificate_validation.armageddon_acm_validation01]
 }
 
 ############################################
@@ -168,7 +168,7 @@ resource "aws_lb_listener" "chewbacca_https_listener01" {
 ############################################
 
 # Explanation: WAF is the shield generator — it blocks the cheap blaster fire before it hits your ALB.
-resource "aws_wafv2_web_acl" "chewbacca_waf01" {
+resource "aws_wafv2_web_acl" "armageddon_waf01" {
   count = var.enable_waf ? 1 : 0
 
   name  = "${var.project_name}-waf01"
@@ -213,11 +213,11 @@ resource "aws_wafv2_web_acl" "chewbacca_waf01" {
 }
 
 # Explanation: Attach the shield generator to the customs checkpoint — ALB is now protected.
-resource "aws_wafv2_web_acl_association" "chewbacca_waf_assoc01" {
+resource "aws_wafv2_web_acl_association" "armageddon_waf_assoc01" {
   count = var.enable_waf ? 1 : 0
 
-  resource_arn = aws_lb.chewbacca_alb01.arn
-  web_acl_arn  = aws_wafv2_web_acl.chewbacca_waf01[0].arn
+  resource_arn = aws_lb.armageddon_alb01.arn
+  web_acl_arn  = aws_wafv2_web_acl.armageddon_waf01[0].arn
 }
 
 ############################################
@@ -225,7 +225,7 @@ resource "aws_wafv2_web_acl_association" "chewbacca_waf_assoc01" {
 ############################################
 
 # Explanation: When the ALB starts throwing 5xx, that’s the Falcon coughing — page the on-call Wookiee.
-resource "aws_cloudwatch_metric_alarm" "chewbacca_alb_5xx_alarm01" {
+resource "aws_cloudwatch_metric_alarm" "armageddon_alb_5xx_alarm01" {
   alarm_name          = "${var.project_name}-alb-5xx-alarm01"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = var.alb_5xx_evaluation_periods
@@ -237,10 +237,10 @@ resource "aws_cloudwatch_metric_alarm" "chewbacca_alb_5xx_alarm01" {
   metric_name = "HTTPCode_ELB_5XX_Count"
 
   dimensions = {
-    LoadBalancer = aws_lb.chewbacca_alb01.arn_suffix
+    LoadBalancer = aws_lb.armageddon_alb01.arn_suffix
   }
 
-  alarm_actions = [aws_sns_topic.chewbacca_sns_topic01.arn]
+  alarm_actions = [aws_sns_topic.armageddon_sns_topic01.arn]
 
   tags = {
     Name = "${var.project_name}-alb-5xx-alarm01"
@@ -251,8 +251,8 @@ resource "aws_cloudwatch_metric_alarm" "chewbacca_alb_5xx_alarm01" {
 # CloudWatch Dashboard (Skeleton)
 ############################################
 
-# Explanation: Dashboards are your cockpit HUD — Chewbacca wants dials, not vibes.
-resource "aws_cloudwatch_dashboard" "chewbacca_dashboard01" {
+# Explanation: Dashboards are your cockpit HUD — armageddon wants dials, not vibes.
+resource "aws_cloudwatch_dashboard" "armageddon_dashboard01" {
   dashboard_name = "${var.project_name}-dashboard01"
 
   # TODO: students can expand widgets; this is a minimal workable skeleton
@@ -266,13 +266,13 @@ resource "aws_cloudwatch_dashboard" "chewbacca_dashboard01" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.chewbacca_alb01.arn_suffix],
-            [".", "HTTPCode_ELB_5XX_Count", ".", aws_lb.chewbacca_alb01.arn_suffix]
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.armageddon_alb01.arn_suffix],
+            [".", "HTTPCode_ELB_5XX_Count", ".", aws_lb.armageddon_alb01.arn_suffix]
           ]
           period = 300
           stat   = "Sum"
           region = var.aws_region
-          title  = "Chewbacca ALB: Requests + 5XX"
+          title  = "armageddon ALB: Requests + 5XX"
         }
       },
       {
@@ -283,12 +283,12 @@ resource "aws_cloudwatch_dashboard" "chewbacca_dashboard01" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.chewbacca_alb01.arn_suffix]
+            ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.armageddon_alb01.arn_suffix]
           ]
           period = 300
           stat   = "Average"
           region = var.aws_region
-          title  = "Chewbacca ALB: Target Response Time"
+          title  = "armageddon ALB: Target Response Time"
         }
       }
     ]
